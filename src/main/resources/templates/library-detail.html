@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>库详情 - 抓拍模拟系统</title>
+    <script src="https://cdn.tailwindcss.com/3.3.3"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans SC', sans-serif; background-color: #f5f7fa; color: #333; margin: 0; padding: 0; height: 100vh; overflow: hidden; }
+        .sidebar { background-color: #1c1c50; color: white; transition: all 0.3s; }
+        .content-area { background-color: #111242; color: white; }
+        .nav-item { transition: all 0.2s; border-left: 3px solid transparent; }
+        .nav-item:hover { background-color: rgba(255,255,255,0.1); }
+        .nav-item.active { background-color: rgba(255,255,255,0.15); border-left: 3px solid #4f46e5; }
+        .card { background-color: rgba(255,255,255,0.05); transition: all 0.3s; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-primary { background-color: #4f46e5; transition: all 0.2s; }
+        .btn-primary:hover { background-color: #4338ca; }
+        .btn-danger { background-color: #dc2626; transition: all 0.2s; }
+        .btn-danger:hover { background-color: #b91c1c; }
+        .modal-overlay { background-color: rgba(0,0,0,0.7); }
+        .modal-content { background-color: #1c1c50; }
+        .table-row:hover { background-color: rgba(255,255,255,0.05); }
+        .pagination-btn { transition: all 0.2s; }
+        .pagination-btn:hover { background-color: rgba(255,255,255,0.1); }
+        .pagination-btn.active { background-color: #4f46e5; }
+    </style>
+</head>
+<body class="flex">
+    <div class="sidebar w-64 h-full flex-shrink-0 flex flex-col">
+        <div class="p-4 border-b border-gray-700">
+            <h1 class="text-xl font-bold flex items-center">
+                <i class="fas fa-camera mr-2"></i>
+                抓拍模拟系统
+            </h1>
+        </div>
+        <nav class="flex-1 overflow-y-auto">
+            <ul class="space-y-1 p-2">
+                <li>
+                    <a href="device" class="nav-item flex items-center p-3 rounded">
+                        <i class="fas fa-server mr-3"></i>
+                        <span>设备管理</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="task" class="nav-item flex items-center p-3 rounded">
+                        <i class="fas fa-tasks mr-3"></i>
+                        <span>推送任务</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="library" class="nav-item active flex items-center p-3 rounded">
+                        <i class="fas fa-database mr-3"></i>
+                        <span>模拟库管理</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="config" class="nav-item flex items-center p-3 rounded">
+                        <i class="fas fa-cog mr-3"></i>
+                        <span>推送配置</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="task-log" class="nav-item flex items-center p-3 rounded">
+                        <i class="fas fa-clipboard-list mr-3"></i>
+                        <span>任务日志</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="p-4 border-t border-gray-700 text-sm text-gray-400">
+            <p>系统版本: v1.0.0</p>
+            <p class="mt-1">© 2025 北京清思智能科技有限公司</p>
+        </div>
+    </div>
+    <div class="content-area flex-1 h-full overflow-y-auto">
+        <div id="library-detail" class="tab-content p-6 block">
+            <div class="flex items-center mb-6">
+                <button class="mr-4 text-gray-400 hover:text-white" onclick="backToLibraryList()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h2 class="text-2xl font-bold">
+                    <i class="fas fa-database mr-2"></i>
+                    [[${library.name}]] - 人员列表
+                </h2>
+            </div>
+            <div th:if="${library.description}" class="text-gray-400 mb-2">[[${library.description}]]</div>
+            <div class="text-sm text-blue-300 mb-4 flex items-center">
+                <div class="text-sm text-blue-300 mt-2 mb-4 flex items-center">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    模拟库存储单位是一组图,包括人脸图和场景图,抽特征会提供小图坐标但不会存储人脸图,由于是循环推流,为了避免多次存图,这里直接使用提供的原始大小图.
+                </div>
+            </div>
+            <div class="flex justify-between items-center mb-6">
+                <div class="text-gray-400" id="person-count">共0人</div>
+                <button class="btn-primary px-4 py-2 rounded flex items-center" onclick="showAddPersonModal()">
+                    <i class="fas fa-plus mr-2"></i>
+                    添加人员
+                </button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="person-list">
+                <!-- JS渲染人员卡片 -->
+            </div>
+            <div class="flex justify-center mt-6">
+                <div class="flex space-x-1" id="person-pagination">
+                    <!-- JS渲染分页按钮 -->
+                </div>
+            </div>
+        </div>
+        <!-- 新增/编辑人员模态框 -->
+        <div id="person-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+            <div class="modal-content rounded-lg w-11/12 max-w-2xl">
+                <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                    <h3 class="text-lg font-bold" id="person-modal-title">新增人员</h3>
+                    <button class="text-gray-400 hover:text-white" onclick="hidePersonModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-4">
+                    <input type="hidden" id="person-id">
+                    <div class="mb-4">
+                        <label class="block text-gray-400 mb-2">姓名</label>
+                        <input id="person-name" type="text" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-400 mb-2">身份证号</label>
+                        <input id="person-idCard" type="text" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-400 mb-2">人脸照片URL</label>
+                        <input id="person-faceImageUrl" type="text" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-400 mb-2">场景照片URL</label>
+                        <input id="person-senceImageUrl" type="text" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    </div>
+                </div>
+                <div class="p-4 border-t border-gray-700 flex justify-end">
+                    <button class="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600 mr-2" onclick="hidePersonModal()">取消</button>
+                    <button class="btn-primary px-4 py-2 rounded" onclick="submitPerson()" id="person-modal-submit">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function backToLibraryList() {
+            window.location.href = 'library';
+        }
+        function showAddPersonModal() {
+            document.getElementById('person-modal-title').innerText = '新增人员';
+            document.getElementById('person-id').value = '';
+            document.getElementById('person-name').value = '';
+            document.getElementById('person-idCard').value = '';
+            document.getElementById('person-faceImageUrl').value = '';
+            document.getElementById('person-senceImageUrl').value = '';
+            document.getElementById('person-modal').classList.remove('hidden');
+        }
+        function hidePersonModal() {
+            document.getElementById('person-modal').classList.add('hidden');
+        }
+        function submitPerson() {
+            const id = document.getElementById('person-id').value;
+            const personName = document.getElementById('person-name').value;
+            const idCard = document.getElementById('person-idCard').value;
+            const faceImageUrl = document.getElementById('person-faceImageUrl').value;
+            const senceImageUrl = document.getElementById('person-senceImageUrl').value;
+            const url = id ? '/libraryDetail/edit' : '/libraryDetail/add';
+            fetch(url, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: id ? Number(id) : undefined, personName, idCard, faceImageUrl, senceImageUrl, libraryId: currentLibraryId})
+            }).then(res => res.json()).then(success => {
+                if (success) {
+                    hidePersonModal();
+                    loadPersons(personCurrentPage);
+                } else {
+                    alert('操作失败');
+                }
+            });
+        }
+        function deletePerson(id) {
+            if (confirm('确定要删除此人员吗？')) {
+                fetch(`/libraryDetail/delete?id=${id}`, {method: 'POST'})
+                    .then(res => res.json())
+                    .then(success => {
+                        if (success) loadPersons(personCurrentPage);
+                        else alert('删除失败');
+                    });
+            }
+        }
+        function showEditPersonModal(id, name, idCard, faceImageUrl, senceImageUrl) {
+            document.getElementById('person-modal-title').innerText = '编辑人员';
+            document.getElementById('person-id').value = id;
+            document.getElementById('person-name').value = name;
+            document.getElementById('person-idCard').value = idCard;
+            document.getElementById('person-faceImageUrl').value = faceImageUrl;
+            document.getElementById('person-senceImageUrl').value = senceImageUrl;
+            document.getElementById('person-modal').classList.remove('hidden');
+        }
+
+        let personCurrentPage = 1;
+        const personPageSize = 10;
+        let currentLibraryId = null;
+
+        function getLibraryId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        function loadPersons(page = 1) {
+            const libraryId = getLibraryId();
+            currentLibraryId = libraryId;
+            fetch(`/libraryDetail/page?libraryId=${libraryId}&page=${page}&size=${personPageSize}`)
+                .then(res => res.json())
+                .then(data => {
+                    const result = data.records ? data : (data.data ? data.data : {});
+                    renderPersonList(result.records || []);
+                    renderPersonPagination(result.current || 1, result.pages || 1);
+                    document.getElementById('person-count').innerText = `共${result.total || (result.records ? result.records.length : 0)}人`;
+                    personCurrentPage = result.current || 1;
+                });
+        }
+
+        function renderPersonList(persons) {
+            const container = document.getElementById('person-list');
+            container.innerHTML = '';
+            persons.forEach(person => {
+                container.innerHTML += `
+                    <div class="card rounded-lg overflow-hidden">
+                        <div class="h-40 bg-gray-700 flex items-center justify-center space-x-2">
+                            <img src="${person.faceImageUrl}" alt="人脸照片" class="h-full object-cover">
+                            <img src="${person.senceImageUrl}" alt="场景照片" class="h-full object-cover">
+                        </div>
+                        <div class="p-3">
+                            <h3 class="font-bold">${person.personName}</h3>
+                            <p class="text-sm text-gray-400 mt-1">身份证: ${person.idCard}</p>
+                            <div class="flex justify-end mt-2">
+                                <button class="btn-primary px-3 py-1 rounded text-sm" onclick="showEditPersonModal(${person.id}, '${person.personName}', '${person.idCard}', '${person.faceImageUrl}', '${person.senceImageUrl}')">编辑</button>
+                                <button class="btn-danger px-3 py-1 rounded text-sm" onclick="deletePerson(${person.id})">删除</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderPersonPagination(current, total) {
+            const container = document.getElementById('person-pagination');
+            container.innerHTML = '';
+            if (total < 1) total = 1;
+            for (let i = 1; i <= total; i++) {
+                container.innerHTML += `<button class="pagination-btn w-8 h-8 rounded flex items-center justify-center ${i === current ? 'active' : ''}" onclick="loadPersons(${i})">${i}</button>`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPersons();
+        });
+    </script>
+</body>
+</html> 

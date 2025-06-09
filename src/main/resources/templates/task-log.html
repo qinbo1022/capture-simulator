@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务日志 - 抓拍模拟系统</title>
+    <script src="https://cdn.tailwindcss.com/3.3.3"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans SC', sans-serif; background-color: #f5f7fa; color: #333; margin: 0; padding: 0; height: 100vh; overflow: hidden; }
+        .sidebar { background-color: #1c1c50; color: white; transition: all 0.3s; }
+        .content-area { background-color: #111242; color: white; }
+        .nav-item { transition: all 0.2s; border-left: 3px solid transparent; }
+        .nav-item:hover { background-color: rgba(255,255,255,0.1); }
+        .nav-item.active { background-color: rgba(255,255,255,0.15); border-left: 3px solid #4f46e5; }
+        .btn-primary { background-color: #4f46e5; transition: all 0.2s; }
+        .btn-primary:hover { background-color: #4338ca; }
+        .table-row:hover { background-color: rgba(255,255,255,0.05); }
+        .pagination-btn { transition: all 0.2s; }
+        .pagination-btn:hover { background-color: rgba(255,255,255,0.1); }
+        .pagination-btn.active { background-color: #4f46e5; }
+    </style>
+</head>
+<body class="flex">
+    <div class="sidebar w-64 h-full flex-shrink-0 flex flex-col">
+        <div class="p-4 border-b border-gray-700">
+            <h1 class="text-xl font-bold flex items-center">
+                <i class="fas fa-camera mr-2"></i>
+                抓拍模拟系统
+            </h1>
+        </div>
+        <nav class="flex-1 overflow-y-auto">
+            <ul class="space-y-1 p-2">
+                <li>
+                    <a href="device" class="nav-item flex items-center p-3 rounded">
+                        <i class="fas fa-server mr-3"></i>
+                        <span>设备管理</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="task" class="nav-item flex items-center p-3 rounded">
+                        <i class="fas fa-tasks mr-3"></i>
+                        <span>推送任务</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="library" class="nav-item flex items-center p-3 rounded">
+                        <i class="fas fa-database mr-3"></i>
+                        <span>模拟库管理</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="config" class="nav-item flex items-center p-3 rounded">
+                        <i class="fas fa-cog mr-3"></i>
+                        <span>推送配置</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="task-log" class="nav-item active flex items-center p-3 rounded">
+                        <i class="fas fa-clipboard-list mr-3"></i>
+                        <span>任务日志</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="p-4 border-t border-gray-700 text-sm text-gray-400">
+            <p>系统版本: v1.0.0</p>
+            <p class="mt-1">© 2025 北京清思智能科技有限公司</p>
+        </div>
+    </div>
+    <div class="content-area flex-1 h-full overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">
+                    <i class="fas fa-clipboard-list mr-2"></i>
+                    任务日志
+                </h2>
+            </div>
+            <div class="flex items-center space-x-2 mb-4">
+                <input id="log-taskName" type="text" placeholder="任务名称(支持模糊)" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 w-64">
+                <select id="log-action" class="bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    <option value="">全部操作</option>
+                    <option value="start">启动</option>
+                    <option value="stop">停止</option>
+                    <option value="pushKafka">推送Kafka</option>
+                </select>
+                <input id="log-startTime" type="datetime-local" class="bg-gray-700 border border-gray-600 rounded px-3 py-2" style="width:180px">
+                <span class="text-gray-400">至</span>
+                <input id="log-endTime" type="datetime-local" class="bg-gray-700 border border-gray-600 rounded px-3 py-2" style="width:180px">
+                <button class="btn-primary px-4 py-2 rounded" onclick="fetchLogPage(1)"><i class="fas fa-search mr-2"></i>查询</button>
+            </div>
+            <div class="bg-gray-800 rounded-lg overflow-hidden">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-700 text-left">
+                            <th class="p-3">ID</th>
+                            <th class="p-3">任务名称</th>
+                            <th class="p-3">操作</th>
+                            <th class="p-3">内容</th>
+                            <th class="p-3">时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-tbody">
+                        <!-- JS渲染日志数据 -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex justify-center mt-6">
+                <div class="flex space-x-1" id="log-pagination">
+                    <!-- JS渲染分页按钮 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    let logCurrentPage = 1;
+    const logPageSize = 10;
+    function fetchLogPage(page) {
+        logCurrentPage = page;
+        const taskName = document.getElementById('log-taskName').value;
+        const action = document.getElementById('log-action').value;
+        const startTime = document.getElementById('log-startTime').value;
+        const endTime = document.getElementById('log-endTime').value;
+        let url = `/task/logPage?page=${page}&size=${logPageSize}`;
+        if (taskName) url += `&name=${encodeURIComponent(taskName)}`;
+        if (action) url += `&action=${encodeURIComponent(action)}`;
+        if (startTime) url += `&startTime=${encodeURIComponent(startTime.replace('T', ' ')+':00')}`;
+        if (endTime) url += `&endTime=${encodeURIComponent(endTime.replace('T', ' ')+':00')}`;
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                renderLogTable(data.records);
+                renderLogPagination(data.current, data.pages);
+            });
+    }
+    function renderLogTable(list) {
+        const tbody = document.getElementById('log-tbody');
+        tbody.innerHTML = '';
+        if (!list || list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-400">暂无日志</td></tr>';
+            return;
+        }
+        list.forEach(log => {
+            let contentHtml = '';
+            if (log.action === 'pushKafka') {
+                const shortMsg = log.message && log.message.length > 50 ? log.message.substring(0, 50) + '...' : log.message;
+                contentHtml = `<span>${shortMsg || ''}</span> <button class='btn-primary px-2 py-1 rounded text-xs ml-2' onclick='showLogDetail(${JSON.stringify(log.message).replace(/'/g, "&#39;")})'>查看</button>`;
+            } else {
+                contentHtml = log.message;
+            }
+            tbody.innerHTML += `<tr class="table-row">
+                <td class="p-3">${log.id}</td>
+                <td class="p-3">${log.taskName || ''}</td>
+                <td class="p-3">${log.action === 'start' ? '启动' : log.action === 'stop' ? '停止' : log.action === 'pushKafka' ? '推送Kafka' : log.action}</td>
+                <td class="p-3">${contentHtml}</td>
+                <td class="p-3">${log.createTime ? log.createTime.replace('T', ' ') : ''}</td>
+            </tr>`;
+        });
+    }
+    function renderLogPagination(current, total) {
+        const box = document.getElementById('log-pagination');
+        box.innerHTML = '';
+        if (total <= 1) return;
+        for (let i = 1; i <= total; i++) {
+            box.innerHTML += `<button class="pagination-btn px-3 py-1 rounded ${i === current ? 'active' : ''}" onclick="fetchLogPage(${i})">${i}</button>`;
+        }
+    }
+    window.onload = function() {
+        // 支持URL参数自动筛选
+        const params = new URLSearchParams(window.location.search);
+        const name = params.get('name');
+        if (name) {
+            document.getElementById('log-taskName').value = name;
+            fetchLogPage(1);
+        } else {
+            fetchLogPage(1);
+        }
+    }
+    // 日志内容弹窗
+    function showLogDetail(msg) {
+        let modal = document.getElementById('log-detail-modal');
+        let content = document.getElementById('log-detail-content');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'log-detail-modal';
+            modal.className = 'fixed inset-0 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="absolute inset-0 bg-black opacity-50" onclick="hideLogDetail()"></div>
+                <div class="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full relative z-10">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">推送Kafka报文</h3>
+                        <button onclick="hideLogDetail()" class="text-gray-500 hover:text-gray-800"><i class="fas fa-times"></i></button>
+                    </div>
+                    <pre id="log-detail-content" class="bg-gray-100 text-gray-800 rounded p-4 overflow-x-auto max-h-96" style="white-space:pre-wrap;word-break:break-all;"></pre>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            content = document.getElementById('log-detail-content');
+        }
+        content.textContent = msg;
+        modal.style.display = 'flex';
+    }
+    function hideLogDetail() {
+        const modal = document.getElementById('log-detail-modal');
+        if (modal) modal.style.display = 'none';
+    }
+    </script>
+</body>
+</html> 

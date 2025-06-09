@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: capture-simulator
+  profiles:
+    active: dev
+  cloud:
+    nacos:
+      # 服务注册
+      discovery:
+        server-addr: ${REGISTER_HOST:10.4.0.65}:${REGISTER_PORT:31080}
+        username: ${REGISTER_USERNAME:admin}
+        password: ${REGISTER_PASSWORD:admin}
+        group: ${REGISTER_GROUP:DEFAULT_GROUP}
+      # 服务动态配置
+      config:
+        server-addr: ${REGISTER_HOST:10.4.0.65}:${REGISTER_PORT:31080}
+        username: ${REGISTER_USERNAME:admin}
+        password: ${REGISTER_PASSWORD:admin}
+        file-extension: yml
+        refresh-enabled: true
+        enabled: true
+        group: ${REGISTER_GROUP:DEFAULT_GROUP}

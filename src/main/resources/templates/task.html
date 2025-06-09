@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>推送任务 - 抓拍模拟系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com/3.3.3"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans SC', sans-serif; background-color: #f5f7fa; color: #333; margin: 0; padding: 0; height: 100vh; overflow: hidden; }
+        .sidebar { background-color: #1c1c50; color: white; transition: all 0.3s; }
+        .content-area { background-color: #111242; color: white; }
+        .nav-item { transition: all 0.2s; border-left: 3px solid transparent; }
+        .nav-item:hover { background-color: rgba(255,255,255,0.1); }
+        .nav-item.active { background-color: rgba(255,255,255,0.15); border-left: 3px solid #4f46e5; }
+        .btn-primary { background-color: #4f46e5; transition: all 0.2s; }
+        .btn-primary:hover { background-color: #4338ca; }
+        .btn-danger { background-color: #dc2626; transition: all 0.2s; }
+        .btn-danger:hover { background-color: #b91c1c; }
+        .modal-overlay { background-color: rgba(0,0,0,0.7); }
+        .modal-content { background-color: #1c1c50; }
+        .table-row:hover { background-color: rgba(255,255,255,0.05); }
+        .pagination-btn { transition: all 0.2s; }
+        .pagination-btn:hover { background-color: rgba(255,255,255,0.1); }
+        .pagination-btn.active { background-color: #4f46e5; }
+    </style>
+</head>
+<body class="flex">
+    <div class="sidebar w-64 h-full flex-shrink-0 flex flex-col">
+        <div class="p-4 border-b border-gray-700">
+            <h1 class="text-xl font-bold flex items-center">
+                <i class="fas fa-camera mr-2"></i>
+                抓拍模拟系统
+            </h1>
+        </div>
+        <nav class="flex-1 overflow-y-auto">
+            <ul class="space-y-1 p-2">
+                <li>
+                    <a href="device" class="nav-item flex items-center p-3 rounded">
+                        <i class="fas fa-server mr-3"></i>
+                        <span>设备管理</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="task" class="nav-item active flex items-center p-3 rounded">
+                        <i class="fas fa-tasks mr-3"></i>
+                        <span>推送任务</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="library" class="nav-item flex items-center p-3 rounded">
+                        <i class="fas fa-database mr-3"></i>
+                        <span>模拟库管理</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="config" class="nav-item flex items-center p-3 rounded">
+                        <i class="fas fa-cog mr-3"></i>
+                        <span>推送配置</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="task-log" class="nav-item flex items-center p-3 rounded">
+                        <i class="fas fa-clipboard-list mr-3"></i>
+                        <span>任务日志</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="p-4 border-t border-gray-700 text-sm text-gray-400">
+            <p>系统版本: v1.0.0</p>
+            <p class="mt-1">© 2025 北京清思智能科技有限公司</p>
+        </div>
+    </div>
+    <div class="content-area flex-1 h-full overflow-y-auto">
+        <div id="task" class="tab-content p-6 block">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">
+                    <i class="fas fa-tasks mr-2"></i>
+                    推送任务
+                </h2>
+                <button class="btn-primary px-4 py-2 rounded flex items-center" onclick="showAddTaskModal()">
+                    <i class="fas fa-plus mr-2"></i>
+                    创建任务
+                </button>
+            </div>
+            <div class="flex items-center space-x-2 mb-4">
+                <button class="btn-primary px-3 py-2 rounded" onclick="batchEditTask()">编辑</button>
+                <button class="btn-danger px-3 py-2 rounded" onclick="batchDeleteTasks()">批量删除</button>
+            </div>
+            <div class="bg-gray-800 rounded-lg overflow-hidden">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-700 text-left">
+                            <th class="p-3"><input type="checkbox" id="task-check-all" onclick="toggleAllTaskCheckboxes()"></th>
+                            <th class="p-3">任务名称</th>
+                            <th class="p-3">关联设备</th>
+                            <th class="p-3">推送内容</th>
+                            <th class="p-3">推送类型</th>
+                            <th class="p-3">推送频率</th>
+                            <th class="p-3">状态</th>
+                            <th class="p-3 text-right">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="task-tbody">
+                        <!-- JS渲染任务数据 -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex justify-center mt-6">
+                <div class="flex space-x-1" id="task-pagination">
+                    <!-- JS渲染分页按钮 -->
+                </div>
+            </div>
+        </div>
+        <!-- 新增/编辑任务模态框 -->
+        <div id="task-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+            <div class="modal-content rounded-lg w-11/12 max-w-2xl">
+                <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                    <h3 class="text-lg font-bold" id="task-modal-title">新增任务</h3>
+                    <button class="text-gray-400 hover:text-white" onclick="hideTaskModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-4">
+                    <input type="hidden" id="task-id">
+                    <div class="mb-4">
+                        <label class="block text-gray-400 mb-2">任务名称</label>
+                        <input id="task-name" type="text" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-400 mb-2">关联设备</label>
+                        <input id="task-deviceSearch" type="text" placeholder="搜索设备ID/名称" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 mb-2" oninput="renderDeviceSelectForTask()">
+                        <select id="task-deviceId" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                            <!-- JS渲染设备选项 -->
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-400 mb-2">推送内容</label>
+                        <div class="flex space-x-4 mb-2">
+                            <div class="flex items-center">
+                                <input type="radio" id="content-library" name="content-type" value="library" checked class="mr-2" onchange="toggleContentType()">
+                                <label for="content-library">模拟库</label>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="radio" id="content-single" name="content-type" value="single" class="mr-2" onchange="toggleContentType()">
+                                <label for="content-single">单组图片</label>
+                            </div>
+                        </div>
+                        <div id="library-select" class="mt-2">
+                            <select id="task-libraryId" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                                <!-- JS渲染库选项 -->
+                            </select>
+                        </div>
+                        <div id="single-image" class="mt-2 hidden">
+                            <input id="task-faceImageUrl" type="text" placeholder="人脸图片URL" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 mb-2">
+                            <input id="task-senceImageUrl" type="text" placeholder="场景图片URL" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-400 mb-2">推送频率 (Cron表达式)</label>
+                        <div class="flex items-center space-x-2">
+                            <input id="task-pushRate" type="text" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2" placeholder="如: 0 0/5 * * * ? (6位)" autocomplete="off">
+                            <select id="cron-helper" class="bg-gray-700 border border-gray-600 rounded px-2 py-2 text-sm" onchange="fillCron()">
+                                <option value="">常用Cron</option>
+                                <option value="0 0/5 * * * ?">每5分钟</option>
+                                <option value="0 0 8 * * ?">每天8点</option>
+                                <option value="0 0 20 * * ?">每天20点</option>
+                                <option value="0 0 * * * ?">每小时</option>
+                                <option value="0 0 0 ? * 1">每周日0点</option>
+                            </select>
+                        </div>
+                        <div id="cron-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                    </div>
+                </div>
+                <div class="p-4 border-t border-gray-700 flex justify-end">
+                    <button class="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600 mr-2" onclick="hideTaskModal()">取消</button>
+                    <button class="btn-primary px-4 py-2 rounded" onclick="submitTask()" id="task-modal-submit">保存</button>
+                </div>
+            </div>
+        </div>
+        <!-- Bootstrap Toast -->
+        <div id="toast-container" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
+        <!-- Bootstrap 确认删除模态框 -->
+        <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                确定要删除选中的任务吗？
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">删除</button>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    let taskCurrentPage = 1;
+    const taskPageSize = 10;
+    let deviceCacheList = null;
+    let deviceMap = {};
+    let deviceCacheLoaded = false;
+    let deviceList = [];
+    let libraryList = [];
+    let deleteTaskIds = [];
+
+    function fetchDeviceCacheListForTask(cb) {
+        fetch('/device/cacheList')
+            .then(res => res.json())
+            .then(list => {
+                deviceCacheList = list;
+                deviceMap = {};
+                list.forEach(d => deviceMap[d.deviceId] = d.name);
+                deviceCacheLoaded = true;
+                renderTaskTable(window.lastTaskList || []); // 补全设备名
+                if (cb) cb();
+            });
+    }
+
+    function fetchLibraryList(cb) {
+        fetch('/library/list')
+            .then(res => res.json())
+            .then(list => {
+                libraryList = list;
+                if (cb) cb();
+            });
+    }
+
+    function renderDeviceSelectForTask(selectedId) {
+        const select = document.getElementById('task-deviceId');
+        const search = document.getElementById('task-deviceSearch').value.trim();
+        select.innerHTML = '<option value="">请选择设备</option>';
+        if (!search) return;
+        fetch(`/device/cacheSearch?keyword=${encodeURIComponent(search)}`)
+            .then(res => res.json())
+            .then(filtered => {
+                filtered.forEach(device => {
+                    select.innerHTML += `<option value="${device.deviceId}" ${selectedId == device.deviceId ? 'selected' : ''}>${device.deviceId} - ${device.name}</option>`;
+                });
+            });
+    }
+
+    function renderLibrarySelect(selectedId) {
+        const select = document.getElementById('task-libraryId');
+        select.innerHTML = '<option value="">请选择库</option>';
+        libraryList.forEach(lib => {
+            select.innerHTML += `<option value="${lib.id}" ${selectedId == lib.id ? 'selected' : ''}>${lib.name}</option>`;
+        });
+    }
+
+    function toggleContentType() {
+        const type = document.querySelector('input[name="content-type"]:checked').value;
+        document.getElementById('library-select').classList.toggle('hidden', type !== 'library');
+        document.getElementById('single-image').classList.toggle('hidden', type !== 'single');
+    }
+
+    function loadTasks(page = 1) {
+        fetch(`/task/page?page=${page}&size=${taskPageSize}`)
+            .then(res => res.json())
+            .then(data => {
+                const result = data.records ? data : (data.data ? data.data : {});
+                window.lastTaskList = result.records || [];
+                renderTaskTable(result.records || []);
+                renderTaskPagination(result.current || 1, result.pages || 1);
+                taskCurrentPage = result.current || 1;
+            });
+    }
+
+    function renderTaskTable(tasks) {
+        const tbody = document.getElementById('task-tbody');
+        tbody.innerHTML = '';
+        tasks.forEach(task => {
+            const deviceId = task.deviceId || '';
+            let deviceName = deviceId;
+            if (deviceCacheLoaded && deviceCacheList) {
+                const device = deviceCacheList.find(d => d.deviceId == deviceId);
+                deviceName = device ? device.name : deviceId;
+            }
+            let content = '';
+            if (task.pushType === 0 || task.pushType === '0') {
+                try {
+                    const obj = JSON.parse(task.contentRef);
+                    const faceUrl = obj.faceImageUrl || '';
+                    const senceUrl = obj.senceImageUrl || '';
+                    content = `<a href="${faceUrl}" target="_blank">人脸图</a> &nbsp; <a href="${senceUrl}" target="_blank">场景图</a>`;
+                } catch (e) {
+                    content = task.contentRef;
+                }
+            } else if (task.contentRef && task.contentRef.startsWith('http')) {
+                content = `<a href="${task.contentRef}" target="_blank">图片</a>`;
+            } else if (task.contentRef) {
+                const lib = libraryList.find(l => l.id == task.contentRef);
+                content = lib ? lib.name : task.contentRef;
+            }
+            let pushTypeText = '';
+            if (task.pushType === 0 || task.pushType === '0') pushTypeText = '图片';
+            else if (task.pushType === 1 || task.pushType === '1') pushTypeText = '模拟库';
+            else pushTypeText = '';
+            let statusText = '';
+            if (task.status === '0') statusText = '待启动';
+            else if (task.status === '1') statusText = '运行中';
+            else if (task.status === '2') statusText = '已停止';
+            else statusText = task.status || '';
+            let opBtn = '';
+            if (task.status === '1') {
+                opBtn = `<button class='btn-danger px-3 py-1 rounded text-sm' onclick='singleStopTask(${task.id})'>停止</button>`;
+            } else {
+                opBtn = `<button class='btn-primary px-3 py-1 rounded text-sm' onclick='singleStartTask(${task.id})'>启动</button>`;
+            }
+            tbody.innerHTML += `
+                <tr class="table-row border-t border-gray-700">
+                    <td class="p-3"><input type="checkbox" class="task-checkbox" value="${task.id}"></td>
+                    <td class="p-3">${task.taskName}</td>
+                    <td class="p-3">${deviceName}</td>
+                    <td class="p-3">${content}</td>
+                    <td class="p-3">${pushTypeText}</td>
+                    <td class="p-3">${task.pushRate}</td>
+                    <td class="p-3">${statusText}</td>
+                    <td class="p-3 text-right space-x-2">${opBtn}</td>
+                </tr>
+            `;
+        });
+        if (tasks.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="p-3 text-center text-gray-400">暂无数据</td></tr>';
+        }
+    }
+
+    function renderTaskPagination(current, total) {
+        const container = document.getElementById('task-pagination');
+        container.innerHTML = '';
+        if (total < 1) total = 1;
+        for (let i = 1; i <= total; i++) {
+            container.innerHTML += `<button class="pagination-btn w-8 h-8 rounded flex items-center justify-center ${i === current ? 'active' : ''}" onclick="loadTasks(${i})">${i}</button>`;
+        }
+    }
+
+    function showAddTaskModal() {
+        document.getElementById('task-modal-title').innerText = '新增任务';
+        document.getElementById('task-id').value = '';
+        document.getElementById('task-name').value = '';
+        document.getElementById('task-deviceSearch').value = '';
+        renderDeviceSelectForTask();
+        document.querySelector('input[name="content-type"][value="library"]').checked = true;
+        toggleContentType();
+        renderLibrarySelect();
+        document.getElementById('task-libraryId').value = '';
+        document.getElementById('task-faceImageUrl').value = '';
+        document.getElementById('task-senceImageUrl').value = '';
+        document.getElementById('task-pushRate').value = '';
+        document.getElementById('task-modal').classList.remove('hidden');
+        document.getElementById('task-id').setAttribute('data-default-status', '0');
+    }
+
+    function showEditTaskModal(id, name, deviceId, contentRef, pushRate, status) {
+        if (status === '1') {
+            alert('运行中的任务不可编辑');
+            return;
+        }
+        document.getElementById('task-modal-title').innerText = '编辑任务';
+        document.getElementById('task-id').value = id;
+        document.getElementById('task-name').value = name;
+        document.getElementById('task-deviceSearch').value = deviceId;
+        renderDeviceSelectForTask(deviceId);
+        if (contentRef && contentRef.startsWith('{')) {
+            try {
+                const obj = JSON.parse(contentRef);
+                document.querySelector('input[name="content-type"][value="single"]').checked = true;
+                toggleContentType();
+                document.getElementById('task-faceImageUrl').value = obj.faceImageUrl || '';
+                document.getElementById('task-senceImageUrl').value = obj.senceImageUrl || '';
+            } catch (e) {
+                document.querySelector('input[name="content-type"][value="library"]').checked = true;
+                toggleContentType();
+                renderLibrarySelect(contentRef);
+            }
+        } else {
+            document.querySelector('input[name="content-type"][value="library"]').checked = true;
+            toggleContentType();
+            renderLibrarySelect(contentRef);
+        }
+        document.getElementById('task-pushRate').value = pushRate;
+        document.getElementById('task-modal').classList.remove('hidden');
+    }
+
+    function hideTaskModal() {
+        document.getElementById('task-modal').classList.add('hidden');
+    }
+
+    function fillCron() {
+        const val = document.getElementById('cron-helper').value;
+        if (val) document.getElementById('task-pushRate').value = val;
+    }
+
+    function showCronDoc() {
+        window.open('https://cron.qqe2.com/', '_blank');
+    }
+
+    function validateCron(cron) {
+        // 只允许6段，允许*、数字、/、,、-、?，不校验具体合法性
+        if (!cron) return false;
+        const parts = cron.trim().split(/\s+/);
+        if (parts.length !== 6) return false;
+        return parts.every(p => /^[\d\*\/\,\-\?]+$/.test(p));
+    }
+
+    function submitTask() {
+        const id = document.getElementById('task-id').value;
+        const taskName = document.getElementById('task-name').value;
+        const deviceId = document.getElementById('task-deviceId').value;
+        const pushRate = document.getElementById('task-pushRate').value.trim();
+        let contentRef = '';
+        let pushType = 0;
+        const type = document.querySelector('input[name="content-type"]:checked').value;
+        if (type === 'library') {
+            contentRef = document.getElementById('task-libraryId').value;
+            pushType = 1;
+        } else {
+            const faceImageUrl = document.getElementById('task-faceImageUrl').value;
+            const senceImageUrl = document.getElementById('task-senceImageUrl').value;
+            contentRef = JSON.stringify({ faceImageUrl, senceImageUrl });
+            pushType = 0;
+        }
+        // 校验cron表达式
+        const cronError = document.getElementById('cron-error');
+        if (!validateCron(pushRate)) {
+            cronError.innerText = '无效的Cron表达式，请检查格式';
+            cronError.classList.remove('hidden');
+            return;
+        } else {
+            cronError.classList.add('hidden');
+        }
+        // 校验必填
+        if (!taskName || !deviceId || !contentRef) {
+            alert('请填写完整信息');
+            return;
+        }
+        const url = id ? '/task/edit' : '/task/add';
+        const status = id ? undefined : '0';
+        const body = {
+            id: id ? Number(id) : undefined,
+            taskName,
+            deviceId: deviceId + '',
+            contentRef: contentRef + '',
+            pushRate,
+            pushType
+        };
+        if (!id) body.status = status;
+        fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
+        }).then(res => res.json()).then(success => {
+            if (success) {
+                hideTaskModal();
+                loadTasks(taskCurrentPage);
+            } else {
+                alert('操作失败，任务名称不可重复');
+            }
+        });
+    }
+
+    function showToast(msg, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const id = 'toast-' + Date.now();
+        const color = type === 'success' ? 'bg-success' : type === 'danger' ? 'bg-danger' : 'bg-primary';
+        const html = `<div id="${id}" class="toast align-items-center text-white ${color} border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">${msg}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>`;
+        container.insertAdjacentHTML('beforeend', html);
+        setTimeout(() => {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }, 2000);
+    }
+
+    function deleteTask(id) {
+        deleteTaskIds = [id];
+        const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+        modal.show();
+    }
+
+    function batchDeleteTasks() {
+        const ids = getSelectedTaskIds();
+        if (ids.length === 0) return showToast('请选择任务', 'danger');
+        // 检查是否有运行中任务
+        const running = window.lastTaskList && window.lastTaskList.filter(t => ids.includes(t.id+"") && t.status === '1');
+        if (running && running.length > 0) {
+            showToast('运行中的任务不可删除', 'danger');
+            return;
+        }
+        deleteTaskIds = ids;
+        const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+        modal.show();
+    }
+
+    function getSelectedTaskIds() {
+        return Array.from(document.querySelectorAll('.task-checkbox:checked')).map(cb => cb.value);
+    }
+
+    function toggleAllTaskCheckboxes() {
+        const checked = document.getElementById('task-check-all').checked;
+        document.querySelectorAll('.task-checkbox').forEach(cb => cb.checked = checked);
+    }
+
+    function batchEditTask() {
+        const ids = getSelectedTaskIds();
+        if (ids.length !== 1) return alert('请选择一个任务进行编辑');
+        // 查找任务并弹出编辑
+        const task = window.lastTaskList && window.lastTaskList.find(t => t.id == ids[0]);
+        if (task && task.status === '1') {
+            alert('运行中的任务不可编辑');
+            return;
+        }
+        if (task) showEditTaskModal(task.id, task.taskName, task.deviceId, task.contentRef, task.pushRate, task.status);
+    }
+
+    function singleStartTask(id) {
+        fetch(`/task/start?id=${id}`, {
+            method: 'POST'
+        }).then(res => res.json()).then(success => {
+            if (success) loadTasks(taskCurrentPage);
+            else alert('启动失败');
+        });
+    }
+
+    function singleStopTask(id) {
+        fetch(`/task/stop?id=${id}`, {
+            method: 'POST'
+        }).then(res => res.json()).then(success => {
+            if (success) loadTasks(taskCurrentPage);
+            else alert('停止失败');
+        });
+    }
+
+    document.getElementById('confirmDeleteBtn').onclick = function() {
+        if (!deleteTaskIds || deleteTaskIds.length === 0) return;
+        let url, body;
+        if (deleteTaskIds.length === 1) {
+            url = `/task/delete?id=${deleteTaskIds[0]}`;
+            body = undefined;
+            fetch(url, {method: 'POST'})
+                .then(res => res.json())
+                .then(success => {
+                    if (success) loadTasks(taskCurrentPage);
+                    else showToast('删除失败', 'danger');
+                });
+        } else {
+            url = '/task/batchDelete';
+            body = JSON.stringify({ids: deleteTaskIds});
+            fetch(url, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body
+            }).then(res => res.json()).then(success => {
+                if (success) loadTasks(taskCurrentPage);
+                else showToast('批量删除失败', 'danger');
+            });
+        }
+        deleteTaskIds = [];
+        bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal')).hide();
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchLibraryList(() => {
+            loadTasks();
+        });
+        fetchDeviceCacheListForTask(); // 异步加载设备缓存
+    });
+    </script>
+</body>
+</html> 
