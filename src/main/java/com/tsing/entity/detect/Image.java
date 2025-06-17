@@ -1,7 +1,10 @@
 /**
-  * Copyright 2023 json.cn 
-  */
+ * Copyright 2023 json.cn
+ */
 package com.tsing.entity.detect;
+
+import com.tsing.entity.bindata.Img;
+import lombok.Data;
 
 /**
  * Auto-generated: 2023-07-25 13:31:45
@@ -9,14 +12,9 @@ package com.tsing.entity.detect;
  * @author json.cn (i@json.cn)
  * @website http://www.json.cn/java2pojo/
  */
+@Data
 public class Image {
 
-    private Data Data;
-    public void setData(Data Data) {
-         this.Data = Data;
-     }
-     public Data getData() {
-         return Data;
-     }
+	private Img Data;
 
 }

@@ -3,51 +3,44 @@ package com.tsing.service.impl;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tsing.client.DetectClient;
+import com.tsing.entity.LibraryDetail;
 import com.tsing.entity.Task;
 import com.tsing.entity.TaskLog;
 import com.tsing.entity.bindata.*;
-import com.tsing.entity.detect.Data;
-import com.tsing.entity.detect.NonMotorVehicles;
+import com.tsing.entity.detect.DetectResp;
 import com.tsing.entity.feign.DeviceDto;
 import com.tsing.entity.kafka.OriginImg;
 import com.tsing.kafka.KafkaConsumer;
 import com.tsing.mapper.TaskLogMapper;
 import com.tsing.mapper.TaskMapper;
 import com.tsing.service.DeviceCacheService;
+import com.tsing.service.ILibraryDetailService;
 import com.tsing.service.ITaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Service;
-import com.tsing.client.DetectClient;
-import com.tsing.entity.LibraryDetail;
-import com.tsing.service.ILibraryDetailService;
-import com.tsing.entity.detect.DetectResp;
-import com.alibaba.fastjson2.JSON;
 import org.springframework.util.StringUtils;
-import org.springframework.scheduling.annotation.Scheduled;
-
-import java.time.format.DateTimeFormatter;
-
-import java.util.List;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledFuture;
-
-import com.alibaba.fastjson2.JSONObject;
-import java.util.Queue;
-import java.util.LinkedList;
 
 /**
  * <p>
@@ -119,7 +112,8 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements IT
 			Long libraryId = null;
 			try {
 				libraryId = Long.valueOf(task.getContentRef());
-			} catch (Exception ignore) {}
+			} catch (Exception ignore) {
+			}
 			if (libraryId != null) {
 				List<LibraryDetail> details = libraryDetailService.list(new QueryWrapper<LibraryDetail>().eq("library_id", libraryId));
 				for (LibraryDetail detail : details) {
@@ -243,7 +237,8 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements IT
 				Long libraryId = null;
 				try {
 					libraryId = Long.valueOf(task.getContentRef());
-				} catch (Exception ignore) {}
+				} catch (Exception ignore) {
+				}
 				if (libraryId != null) {
 					List<LibraryDetail> details = libraryDetailService.list(new QueryWrapper<LibraryDetail>().eq("library_id", libraryId));
 					queue = new LinkedList<>();
@@ -254,12 +249,16 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements IT
 				}
 			}
 		}
-		if (queue == null || queue.isEmpty()) return;
+		if (queue == null || queue.isEmpty()) {
+			return;
+		}
 		Object item = queue.poll();
-		if (item == null) return;
+		if (item == null) {
+			return;
+		}
 		if (task.getPushType() == 0) {
 			// 单组图片
-			JSONObject obj = JSON.parseObject((String)item);
+			JSONObject obj = JSON.parseObject((String) item);
 			String faceImageUrl = obj.getString("faceImageUrl");
 			String senceImageUrl = obj.getString("senceImageUrl");
 			DetectResp resp = detectClient.detectImg(faceImageUrl, senceImageUrl, task.getDeviceId());
@@ -269,7 +268,7 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements IT
 			}
 		} else if (task.getPushType() == 1) {
 			// 库类型
-			LibraryDetail detail = (LibraryDetail)item;
+			LibraryDetail detail = (LibraryDetail) item;
 			String faceImageUrl = detail.getFaceImageUrl();
 			String senceImageUrl = detail.getSenceImageUrl();
 			DetectResp resp = detectClient.detectImg(faceImageUrl, senceImageUrl, task.getDeviceId());
@@ -288,25 +287,22 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements IT
 		int objType = 0;
 		// 1. Img
 		if (result.getImage() != null && result.getImage().getData() != null) {
-			com.tsing.entity.detect.Data data = result.getImage().getData();
-			com.tsing.entity.bindata.Img img = new com.tsing.entity.bindata.Img();
-			img.setWidth(data.getWidth());
-			img.setHeight(data.getHeight());
-			img.setURI(data.getURI());
-			img.setBinData(data.getBinData());
-			img.setSn((long) data.getSn());
-			bindata.setImg(img);
+			Img data = result.getImage().getData();
+			if (data.getId().isEmpty()) {
+				data.setId(UUID.randomUUID().toString());
+			}
+			bindata.setImg(data);
 		}
 		// 2. Faces
 		if (result.getFaces() != null) {
 			List<Face> faces = result.getFaces();
 			faces.forEach(f -> {
-				Data data = result.getImage().getData();
-				f.setOriginImg(JSONObject.from(data));
-				JSONObject img = f.getImg();
-				JSONObject img1 = img.getJSONObject("Img");
-				img1.put("URI", faceImageUrl);
-				img.put("Img", img1);
+				Img data = result.getImage().getData();
+				f.setOriginImg(data);
+				com.tsing.entity.detect.Img img = f.getImg();
+				OriginImg img1 = img.getImg();
+				img1.setURI(faceImageUrl);
+				img.setImg(img1);
 			});
 			bindata.setFaces(faces);
 			objType = 1024;
@@ -315,12 +311,12 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements IT
 		if (result.getVehicles() != null) {
 			List<RecVehicle> vehicles = result.getVehicles();
 			vehicles.forEach(f -> {
-				Data data = result.getImage().getData();
-				f.setOriginImg(JSONObject.from(data));
-				JSONObject img = f.getImg();
-				JSONObject img1 = img.getJSONObject("Img");
-				img1.put("URI", faceImageUrl);
-				img.put("Img", img1);
+				Img data = result.getImage().getData();
+				f.setOriginImg(data);
+				com.tsing.entity.detect.Img img = f.getImg();
+				OriginImg img1 = img.getImg();
+				img1.setURI(faceImageUrl);
+				img.setImg(img1);
 			});
 			bindata.setVehicle(vehicles);
 			objType = 1;
@@ -329,12 +325,12 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements IT
 		if (result.getPedestrian() != null) {
 			List<Pedestrian> pedestrian = result.getPedestrian();
 			pedestrian.forEach(p -> {
-				Data data = result.getImage().getData();
-				p.setOriginImg(JSONObject.from(data));
-				JSONObject img = p.getImg();
-				JSONObject img1 = img.getJSONObject("Img");
-				img1.put("URI", faceImageUrl);
-				img.put("Img", img1);
+				Img data = result.getImage().getData();
+				p.setOriginImg(data);
+				com.tsing.entity.detect.Img img = p.getImg();
+				OriginImg img1 = img.getImg();
+				img1.setURI(faceImageUrl);
+				img.setImg(img1);
 			});
 			bindata.setPedestrian(pedestrian);
 			// face 不处理5556类型 跳过
@@ -361,12 +357,12 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements IT
 //			bindata.setNonMotorVehicles(nmvList);
 			List<NonMotorVehicle> nonMotorVehicles = result.getNonMotorVehicles();
 			nonMotorVehicles.forEach(p -> {
-				Data data = result.getImage().getData();
-				p.setOriginImg(JSONObject.from(data));
-				JSONObject img = p.getImg();
-				JSONObject img1 = img.getJSONObject("Img");
-				img1.put("URI", faceImageUrl);
-				img.put("Img", img1);
+				Img data = result.getImage().getData();
+				p.setOriginImg(data);
+				com.tsing.entity.detect.Img img = p.getImg();
+				OriginImg img1 = img.getImg();
+				img1.setURI(faceImageUrl);
+				img.setImg(img1);
 			});
 			bindata.setNonMotorVehicles(nonMotorVehicles);
 			objType = 2;
@@ -417,7 +413,7 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements IT
 			return;
 		}
 		String binDataJson = JSON.toJSONString(bindata);
-		kafkaConsumer.processBinData(String.valueOf(System.currentTimeMillis()), bindata.getMetadata().getObjType(), binDataJson,taskId);
+		kafkaConsumer.processBinData(String.valueOf(System.currentTimeMillis()), bindata.getMetadata().getObjType(), binDataJson, taskId);
 	}
 
 	private static class ScheduledTaskRef {

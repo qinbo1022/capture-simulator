@@ -23,7 +23,7 @@ public class Face {
     private Float Confidence;
 
     @JSONField(name = "Img")
-    private JSONObject Img;
+    private com.tsing.entity.detect.Img Img;
 
     @JSONField(name = "AlignResult")
     private JSONObject AlignResult;
@@ -50,7 +50,7 @@ public class Face {
     private JSONObject Owner;
 
     @JSONField(name = "OriginImg")
-    private JSONObject OriginImg;
+    private Img OriginImg;
 
     @Data
     public static class FaceAttribute {

@@ -22,7 +22,7 @@ public class RecVehicle {
 
     //-机动车的区域坐标和裁剪图
     @JSONField(name = "Img")
-    private JSONObject Img;
+    private com.tsing.entity.detect.Img Img;
     //-机动车的特征数据
     @JSONField(name = "Features")
     private String Features;
@@ -55,7 +55,7 @@ public class RecVehicle {
     private String ReId;
 
     @JSONField(name = "OriginImg")
-    private JSONObject OriginImg;
+    private Img OriginImg;
 
 
 

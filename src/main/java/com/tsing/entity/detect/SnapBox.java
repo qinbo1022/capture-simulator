@@ -3,68 +3,31 @@
   */
 package com.tsing.entity.detect;
 
+import com.alibaba.fastjson2.annotation.JSONField;
+import lombok.Data;
+
 /**
  * Auto-generated: 2023-07-25 13:31:45
  *
  * @author json.cn (i@json.cn)
  * @website http://www.json.cn/java2pojo/
  */
+@Data
 public class SnapBox {
 
+    @JSONField(name = "X")
     private int X;
+    @JSONField(name = "Y")
     private int Y;
+    @JSONField(name = "Width")
     private int Width;
+    @JSONField(name = "Height")
     private int Height;
+    @JSONField(name = "ResWidth")
     private int ResWidth;
+    @JSONField(name = "ResHeight")
     private int ResHeight;
+    @JSONField(name = "Confidence")
     private double Confidence;
-    public void setX(int X) {
-         this.X = X;
-     }
-     public int getX() {
-         return X;
-     }
-
-    public void setY(int Y) {
-         this.Y = Y;
-     }
-     public int getY() {
-         return Y;
-     }
-
-    public void setWidth(int Width) {
-         this.Width = Width;
-     }
-     public int getWidth() {
-         return Width;
-     }
-
-    public void setHeight(int Height) {
-         this.Height = Height;
-     }
-     public int getHeight() {
-         return Height;
-     }
-
-    public void setResWidth(int ResWidth) {
-         this.ResWidth = ResWidth;
-     }
-     public int getResWidth() {
-         return ResWidth;
-     }
-
-    public void setResHeight(int ResHeight) {
-         this.ResHeight = ResHeight;
-     }
-     public int getResHeight() {
-         return ResHeight;
-     }
-
-    public void setConfidence(double Confidence) {
-         this.Confidence = Confidence;
-     }
-     public double getConfidence() {
-         return Confidence;
-     }
 
 }

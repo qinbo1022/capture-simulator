@@ -7,8 +7,11 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSONObject;
+import com.tsing.entity.Config;
 import com.tsing.entity.bindata.*;
 import com.tsing.entity.kafka.AnalysisSyncRequest;
+import com.tsing.entity.kafka.OriginImg;
+import com.tsing.service.IConfigService;
 import com.tsing.service.impl.TaskServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +19,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 import org.springframework.util.concurrent.ListenableFuture;
-import com.tsing.service.IConfigService;
-import com.tsing.entity.Config;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -114,8 +115,8 @@ public class KafkaConsumer {
 	}
 
 	private <T> AnalysisSyncRequest buildData(T data, String binData) {
-		JSONObject originImg = null;
-		JSONObject img = null;
+		Img originImg = null;
+		OriginImg img = null;
 		String features = "";
 		String elementType = "";
 		Bindata bData = JSONObject.parseObject(binData, Bindata.class);
@@ -124,25 +125,25 @@ public class KafkaConsumer {
 			Pedestrian pedestrian = (Pedestrian) data;
 			features = pedestrian.getFeatures();
 			originImg = pedestrian.getOriginImg();
-			img = pedestrian.getImg();
+			img = pedestrian.getImg().getImg();
 			elementType = ElementCodeEnum.HUMAN_BODY_FEATURES.getElementCode();
 		} else if (data instanceof Face) {
 			Face face = (Face) data;
 			features = face.getFeatures();
 			originImg = face.getOriginImg();
-			img = face.getImg();
+			img = face.getImg().getImg();
 			elementType = ElementCodeEnum.HUMAN_FACE_FEATURES.getElementCode();
 		} else if (data instanceof RecVehicle) {
 			RecVehicle vehicle = (RecVehicle) data;
 			features = vehicle.getFeatures();
 			originImg = vehicle.getOriginImg();
-			img = vehicle.getImg();
+			img = vehicle.getImg().getImg();
 			elementType = ElementCodeEnum.MOTOR_VEHICLE_FEATURES.getElementCode();
 		} else if (data instanceof NonMotorVehicle) {
 			NonMotorVehicle nonMotorVehicle = (NonMotorVehicle) data;
 			features = nonMotorVehicle.getFeatures();
 			originImg = nonMotorVehicle.getOriginImg();
-			img = nonMotorVehicle.getImg();
+			img = nonMotorVehicle.getImg().getImg();
 			elementType = ElementCodeEnum.NON_MOTOR_VEHICLE_FEATURES.getElementCode();
 		}
 		AnalysisSyncRequest.AnalysisResponseMetaData analysisResponseMetaData = new AnalysisSyncRequest.AnalysisResponseMetaData();
@@ -161,8 +162,8 @@ public class KafkaConsumer {
 		AnalysisSyncRequest.AnalysisSyncResult analysisSyncResult = new AnalysisSyncRequest.AnalysisSyncResult();
 
 		analysisSyncResult.setMediaResourceType(MediaResourceTypeEnum.photo.getCode());
-		analysisSyncResult.setMediaResourceId((String) originImg.get("Id"));
-		analysisSyncResult.setMediaResourceUrl((String) originImg.get("URI"));
+		analysisSyncResult.setMediaResourceId(img.getId());
+		analysisSyncResult.setMediaResourceUrl(img.getURI());
 		List<AnalysisSyncRequest.ElementResult> elementResults = new ArrayList<>();
 		AnalysisSyncRequest.ElementResult elementResult = new AnalysisSyncRequest.ElementResult();
 		elementResult.setElementType(elementType);
@@ -170,8 +171,8 @@ public class KafkaConsumer {
 		List<AnalysisSyncRequest.ElementData> elementDataObjectList = new ArrayList<>();
 		AnalysisSyncRequest.ElementData elementData = new AnalysisSyncRequest.ElementData();
 		elementData.setFeatures(features);
-		elementData.setMediaResourceId((String) originImg.get("Id"));
-		elementData.setMediaResourceUrl((String) originImg.get("URI"));
+		elementData.setMediaResourceId(img.getId());
+		elementData.setMediaResourceUrl(img.getURI());
 
 		elementDataObjectList.add(elementData);
 		elementResult.setElementDataObjectList(elementDataObjectList);

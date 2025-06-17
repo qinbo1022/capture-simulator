@@ -3,7 +3,9 @@
   */
 package com.tsing.entity.detect;
 
+import com.alibaba.fastjson2.annotation.JSONField;
 import com.tsing.entity.kafka.OriginImg;
+import lombok.Data;
 
 /**
  * Auto-generated: 2023-07-25 13:31:45
@@ -11,70 +13,24 @@ import com.tsing.entity.kafka.OriginImg;
  * @author json.cn (i@json.cn)
  * @website http://www.json.cn/java2pojo/
  */
+@Data
 public class Img {
 
+    @JSONField(name = "Cutboard")
     private Cutboard Cutboard;
+    @JSONField(name = "DetectedBox")
     private DetectedBox DetectedBox;
+    @JSONField(name = "SnapBox")
     private SnapBox SnapBox;
+    @JSONField(name = "Img")
     private OriginImg Img;
+    @JSONField(name = "Rect")
     private Rect Rect;
+    @JSONField(name = "CutboardSpeed")
     private int CutboardSpeed;
+    @JSONField(name = "CutboardDirection")
     private int CutboardDirection;
+    @JSONField(name = "Trajectory")
     private String Trajectory;
-    public void setCutboard(Cutboard Cutboard) {
-         this.Cutboard = Cutboard;
-     }
-     public Cutboard getCutboard() {
-         return Cutboard;
-     }
-
-    public void setDetectedBox(DetectedBox DetectedBox) {
-         this.DetectedBox = DetectedBox;
-     }
-     public DetectedBox getDetectedBox() {
-         return DetectedBox;
-     }
-
-    public void setSnapBox(SnapBox SnapBox) {
-         this.SnapBox = SnapBox;
-     }
-     public SnapBox getSnapBox() {
-         return SnapBox;
-     }
-
-    public void setImg(OriginImg Img) {
-         this.Img = Img;
-     }
-     public OriginImg getImg() {
-         return Img;
-     }
-
-    public void setRect(Rect Rect) {
-         this.Rect = Rect;
-     }
-     public Rect getRect() {
-         return Rect;
-     }
-
-    public void setCutboardSpeed(int CutboardSpeed) {
-         this.CutboardSpeed = CutboardSpeed;
-     }
-     public int getCutboardSpeed() {
-         return CutboardSpeed;
-     }
-
-    public void setCutboardDirection(int CutboardDirection) {
-         this.CutboardDirection = CutboardDirection;
-     }
-     public int getCutboardDirection() {
-         return CutboardDirection;
-     }
-
-    public void setTrajectory(String Trajectory) {
-         this.Trajectory = Trajectory;
-     }
-     public String getTrajectory() {
-         return Trajectory;
-     }
 
 }

@@ -19,7 +19,7 @@ public class Pedestrian {
     @JSONField(name = "Id")
     private Integer Id;
     @JSONField(name = "Img")
-    private JSONObject Img;
+    private com.tsing.entity.detect.Img Img;
     @JSONField(name = "Confidence")
     private Float Confidence;
     @JSONField(name = "PedesAttr")
@@ -37,7 +37,7 @@ public class Pedestrian {
     @JSONField(name = "MatchedFace")
     private Face MatchedFace;
     @JSONField(name = "OriginImg")
-    private JSONObject OriginImg;
+    private Img OriginImg;
 
     @Data
     public static class PedesAttr{

@@ -27,4 +27,7 @@ public class Img {
 
     @JSONField(name = "Sn")
     private Long Sn;
+
+    @JSONField(name = "Id")
+    private String Id;
 }

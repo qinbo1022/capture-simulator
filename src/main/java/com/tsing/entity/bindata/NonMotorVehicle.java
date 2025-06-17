@@ -1,6 +1,5 @@
 package com.tsing.entity.bindata;
 
-import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
 
@@ -24,7 +23,7 @@ public class NonMotorVehicle {
     private Integer Id;
 
     @JSONField(name = "Img")
-    private JSONObject Img;
+    private com.tsing.entity.detect.Img Img;
 
     @JSONField(name = "Attributes")
     private List<RecVehicle.Attribute> Attributes;
@@ -36,5 +35,5 @@ public class NonMotorVehicle {
     private List<RecVehicle.Passenger> Passengers;
 
     @JSONField(name = "OriginImg")
-    private JSONObject OriginImg;
+    private Img OriginImg;
 }

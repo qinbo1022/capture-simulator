@@ -3,52 +3,26 @@
   */
 package com.tsing.entity.detect;
 
+import com.alibaba.fastjson2.annotation.JSONField;
+import lombok.Data;
+
 /**
  * Auto-generated: 2023-07-25 13:31:45
  *
  * @author json.cn (i@json.cn)
  * @website http://www.json.cn/java2pojo/
  */
+@Data
 public class Rect {
-
+    @JSONField(name = "CenterX")
     private int CenterX;
+    @JSONField(name = "CenterY")
     private int CenterY;
+    @JSONField(name = "Width")
     private int Width;
+    @JSONField(name = "Height")
     private int Height;
+    @JSONField(name = "Angle")
     private int Angle;
-    public void setCenterX(int CenterX) {
-         this.CenterX = CenterX;
-     }
-     public int getCenterX() {
-         return CenterX;
-     }
-
-    public void setCenterY(int CenterY) {
-         this.CenterY = CenterY;
-     }
-     public int getCenterY() {
-         return CenterY;
-     }
-
-    public void setWidth(int Width) {
-         this.Width = Width;
-     }
-     public int getWidth() {
-         return Width;
-     }
-
-    public void setHeight(int Height) {
-         this.Height = Height;
-     }
-     public int getHeight() {
-         return Height;
-     }
-
-    public void setAngle(int Angle) {
-         this.Angle = Angle;
-     }
-     public int getAngle() {
-         return Angle;
-     }
 
 }
