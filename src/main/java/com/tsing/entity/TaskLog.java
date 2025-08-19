@@ -12,7 +12,7 @@ public class TaskLog implements Serializable {
     private Long id;
     private Long taskId;
     private String taskName;
-    private String action; // start/stop/execute
+    private String action;
     private String message;
     private LocalDateTime createTime;
 } 
